@@ -7,6 +7,46 @@ from time import *
 # Import modified driver - gives us control over the backlight
 import RPi_I2C_driver
 
+# Set up the logging, based on the command line arguments
+
+import logging
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-d', '--debug', help='Log debug information to screen', action="store_true")
+parser.add_argument('-f', '--file', help='Log debug information to file', action="store_true")
+args = parser.parse_args()
+if args.debug:
+        loglevel = logging.DEBUG
+else:
+        loglevel = logging.INFO
+
+# logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',filename='example.log',level=loglevel)
+
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+# create console handler to show messages on screen
+ch = logging.StreamHandler()
+ch.setLevel(loglevel)
+# create formatter and add it to the handlers
+formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
+ch.setFormatter(formatter)
+# add the handlers to logger
+logger.addHandler(ch)
+
+
+# create file handler which logs messages to file if user specifed it on the command line
+if args.file:
+        fh = logging.FileHandler('logger.log', 'w')
+        fh.setLevel(loglevel)
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+
+
+print args
+print loglevel
+
+
 def ascii_integers_to_string(string, base=16, digits_per_char=2):
 	return "".join([chr(int(string[i:i+digits_per_char], base=base)) for i in range(0, len(string), digits_per_char)])
 
@@ -25,10 +65,10 @@ def scroll_ltr_infinite(string):
 
 
 
-path = "/tmp/shairport-sync-metadata"
-fifo = open(path, "r")
 
 def main():
+	path = "/tmp/shairport-sync-metadata"
+	fifo = open(path, "r")
 	wholeelement = ""
 	title = ""
 	album = ""
@@ -48,11 +88,11 @@ def main():
 		while True:
 			line = f.readline()
 			line = line.strip()
-			#print "Got " + line
+			logger.debug("Got " + line)
 			wholeelement += line
 			if line.endswith("</item>"):
-				# print "end of item"
-				# print "element = " + wholeelement
+				logger.debug("end of item")
+				logger.debug("element = " + wholeelement)
 				
 				# Now that we've got a whole xml element, we can process it
 				doc = xml.etree.ElementTree.fromstring(wholeelement)
@@ -78,16 +118,16 @@ def main():
 						#updateflag = True
 						
 					if code == "pend":
-						print "Playback finished..."
+						logger.info("Playback finished...")
 						device.lcd_clear()
 						device.backlight(0)
 
 					if code == "pbeg":
 						device.backlight(1)
-						print "Playback started..."
+						logger.info("Playback started...")
 						device.lcd_clear()
 					if code == "snua":
-						print "User agent received"
+						logger.info("User agent received")
 						line4 = data
 						updateflag = True				
 				if type == "core":
@@ -104,13 +144,19 @@ def main():
 						if album != data:
 							album = data
 							updateflag = True
+					if code == "asbr":
+						logger.info("Bitrate:")
+						logger.info(int("0x" + ''.join([hex(ord(x))[2:] for x in data]), base=16))
 
 
 				if data != "":
-					print "Type: " + type + ", Code: " + code + ", Data: " + data
+					logger.info("Type: " + type + ", Code: " + code + ", Data: " + data)
+				else:
+					logger.info("Type: " + type + ", Code: " + code)
+					
 				wholeelement = ""
 			if updateflag:
-				print "\nTitle: " + title + "\nArtist: " + artist + "\nAlbum: " + album
+				logger.info("\nTitle: " + title + "\nArtist: " + artist + "\nAlbum: " + album)
 
 				device.lcd_clear()
 				# for now, truncate to 20 chars to prevent wrapping onto other lines
