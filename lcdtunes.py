@@ -54,7 +54,7 @@ def ascii_integers_to_string(string, base=16, digits_per_char=2):
 
 # function to scroll text
 
-def scroll_ltr_infinite(string):
+def scroll_ltr_infinite(string, line):
 	logger.debug("new thread started...")
 	logger.debug(string)
 	global titleflag
@@ -65,11 +65,14 @@ def scroll_ltr_infinite(string):
 	string = str_pad + string
 	while not titleflag:
     		for i in range (0, len(string)):
-			logger.debug("in the loop...")
+			logger.debug("in the for loop...")
+			logger.debug(i)
         		lcd_text = string[i:(i+20)]
-        		device.lcd_display_string(lcd_text,1)
-        		sleep(0.4)
-        		device.lcd_display_string(str_pad,1)
+        		device.lcd_display_string(lcd_text, line)
+        		sleep(0.25)
+        		device.lcd_display_string(str_pad, line)
+		logger.debug("while loop...")
+		logger.debug(titleflag)
 	logger.debug("Thread exiting...")
 
 
@@ -183,14 +186,22 @@ def main():
 	fifo.close()
 
 def test():
+	global titleflag
+	device.lcd_display_string("This is line 2",2)
 	sleep(1)
 	logger.debug("test function")
-	thread.start_new_thread(scroll_ltr_infinite, ("This is a long string that should scroll in a new thread",))
+	thread.start_new_thread(scroll_ltr_infinite, ("This is a long string that should scroll in a new thread", 1))
+	sleep(1)
+	device.lcd_display_string("This is line 3",3)
+	# thread.start_new_thread(scroll_ltr_infinite, ("This is a different string that should scroll in a new thread", 2))
 	# thread.start_new_thread(scroll_ltr_infinite, ())
 	#scroll_ltr_infinite("This is a long string that should scroll")
 	sleep(60)
 	titleflag = True
+	logger.debug("titleflag set to true")
+	sleep(60)
+	logger.debug("exiting...")
 
 if __name__ == "__main__":
-	main()
-	# test()
+	# main()
+	test()
