@@ -3,6 +3,7 @@ import sys
 import base64
 import xml.etree.ElementTree
 from time import *
+import thread
 
 # Import modified driver - gives us control over the backlight
 import RPi_I2C_driver
@@ -29,7 +30,8 @@ logger.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(loglevel)
 # create formatter and add it to the handlers
-formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
+formatter = logging.Formatter('%(levelname)s: %(message)s')
+file_formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
 ch.setFormatter(formatter)
 # add the handlers to logger
 logger.addHandler(ch)
@@ -39,13 +41,13 @@ logger.addHandler(ch)
 if args.file:
         fh = logging.FileHandler('logger.log', 'w')
         fh.setLevel(loglevel)
-        fh.setFormatter(formatter)
+        fh.setFormatter(file_formatter)
         logger.addHandler(fh)
 
 
-print args
-print loglevel
-
+# declare global variables
+titleflag = False
+device = RPi_I2C_driver.lcd()
 
 def ascii_integers_to_string(string, base=16, digits_per_char=2):
 	return "".join([chr(int(string[i:i+digits_per_char], base=base)) for i in range(0, len(string), digits_per_char)])
@@ -53,16 +55,22 @@ def ascii_integers_to_string(string, base=16, digits_per_char=2):
 # function to scroll text
 
 def scroll_ltr_infinite(string):
+	logger.debug("new thread started...")
+	logger.debug(string)
+	global titleflag
+	global device
+	titleflag = False
+	logger.debug(titleflag)
 	str_pad = " " * 20
 	string = str_pad + string
-
-	while updateflag:
+	while not titleflag:
     		for i in range (0, len(string)):
+			logger.debug("in the loop...")
         		lcd_text = string[i:(i+20)]
         		device.lcd_display_string(lcd_text,1)
-        		sleep(0.3)
+        		sleep(0.4)
         		device.lcd_display_string(str_pad,1)
-
+	logger.debug("Thread exiting...")
 
 
 
@@ -75,8 +83,9 @@ def main():
 	artist = ""
 	line4 = ""
 	updateflag = False
+	global titleflag
+	global device
 	# initialize the screen
-	device = RPi_I2C_driver.lcd()
 
 	device.lcd_clear()
 	device.lcd_display_string("     Music Box      ",2)
@@ -119,6 +128,7 @@ def main():
 						
 					if code == "pend":
 						logger.info("Playback finished...")
+						titleflag = True # stop running title thread if there is one
 						device.lcd_clear()
 						device.backlight(0)
 
@@ -158,14 +168,29 @@ def main():
 			if updateflag:
 				logger.info("\nTitle: " + title + "\nArtist: " + artist + "\nAlbum: " + album)
 
-				device.lcd_clear()
+				# device.lcd_clear()
 				# for now, truncate to 20 chars to prevent wrapping onto other lines
-				device.lcd_display_string(title[:20],1)
-				device.lcd_display_string(artist[:20],2)
-				device.lcd_display_string(album[:20],3)
-				device.lcd_display_string(line4[:20],4)
+				# Check to see if title is > 20 chars. If yes start a thread to scroll text. If no, just display as is
+				if (len(title) > 20):
+					titleflag = True # stop running title thread if there is one
+					thread.start_new_thread(scroll_ltr_infinite, (title,))
+				else:
+					device.lcd_display_string(title[:20],1)
+				# device.lcd_display_string(artist[:20],2)
+				# device.lcd_display_string(album[:20],3)
+				# device.lcd_display_string(line4[:20],4)
 				updateflag = False
 	fifo.close()
 
+def test():
+	sleep(1)
+	logger.debug("test function")
+	thread.start_new_thread(scroll_ltr_infinite, ("This is a long string that should scroll in a new thread",))
+	# thread.start_new_thread(scroll_ltr_infinite, ())
+	#scroll_ltr_infinite("This is a long string that should scroll")
+	sleep(60)
+	titleflag = True
+
 if __name__ == "__main__":
 	main()
+	# test()
