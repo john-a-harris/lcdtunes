@@ -16,9 +16,12 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--debug', help='Log debug information to screen', action="store_true")
 parser.add_argument('-f', '--file', help='Log debug information to file', action="store_true")
+parser.add_argument('-q', '--quiet', help='No output to screen', action="store_true")
 args = parser.parse_args()
 if args.debug:
         loglevel = logging.DEBUG
+elif args.quiet:
+	loglevel = 60
 else:
         loglevel = logging.INFO
 
@@ -60,19 +63,18 @@ def scroll_ltr_infinite(string, line):
 	global titleflag
 	global device
 	titleflag = False
+	i = 0
 	logger.debug(titleflag)
 	str_pad = " " * 20
 	string = str_pad + string
-	while not titleflag:
-    		for i in range (0, len(string)):
-			logger.debug("in the for loop...")
-			logger.debug(i)
-        		lcd_text = string[i:(i+20)]
-        		device.lcd_display_string(lcd_text, line)
-        		sleep(0.25)
-        		device.lcd_display_string(str_pad, line)
-		logger.debug("while loop...")
-		logger.debug(titleflag)
+	while ((not titleflag) and i in range (0, len(string))):
+		logger.debug("in the for loop...")
+		logger.debug(i)
+		lcd_text = string[i:(i+20)]
+		device.lcd_display_string(lcd_text, line)
+		sleep(0.25)
+		device.lcd_display_string(str_pad, line)
+		i += 1
 	logger.debug("Thread exiting...")
 
 
@@ -171,17 +173,17 @@ def main():
 			if updateflag:
 				logger.info("\nTitle: " + title + "\nArtist: " + artist + "\nAlbum: " + album)
 
-				# device.lcd_clear()
+				device.lcd_clear()
 				# for now, truncate to 20 chars to prevent wrapping onto other lines
 				# Check to see if title is > 20 chars. If yes start a thread to scroll text. If no, just display as is
-				if (len(title) > 20):
-					titleflag = True # stop running title thread if there is one
-					thread.start_new_thread(scroll_ltr_infinite, (title,))
-				else:
-					device.lcd_display_string(title[:20],1)
-				# device.lcd_display_string(artist[:20],2)
-				# device.lcd_display_string(album[:20],3)
-				# device.lcd_display_string(line4[:20],4)
+				#if (len(title) > 20):
+				#	titleflag = True # stop running title thread if there is one
+				#	thread.start_new_thread(scroll_ltr_infinite, (title,))
+				#else:
+				device.lcd_display_string(title[:20],1)
+				device.lcd_display_string(artist[:20],2)
+				device.lcd_display_string(album[:20],3)
+				device.lcd_display_string(line4[:20],4)
 				updateflag = False
 	fifo.close()
 
@@ -193,7 +195,7 @@ def test():
 	thread.start_new_thread(scroll_ltr_infinite, ("This is a long string that should scroll in a new thread", 1))
 	sleep(1)
 	device.lcd_display_string("This is line 3",3)
-	# thread.start_new_thread(scroll_ltr_infinite, ("This is a different string that should scroll in a new thread", 2))
+	thread.start_new_thread(scroll_ltr_infinite, ("This is a different string that should scroll in a new thread", 2))
 	# thread.start_new_thread(scroll_ltr_infinite, ())
 	#scroll_ltr_infinite("This is a long string that should scroll")
 	sleep(60)
@@ -203,5 +205,5 @@ def test():
 	logger.debug("exiting...")
 
 if __name__ == "__main__":
-	# main()
-	test()
+	main()
+	# test()
