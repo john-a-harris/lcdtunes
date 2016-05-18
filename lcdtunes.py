@@ -3,10 +3,9 @@ import sys
 import base64
 import xml.etree.ElementTree
 from time import *
-import thread
 
-# Import modified driver - gives us control over the backlight
-import RPi_I2C_driver
+# Import Lcdproc server stuff
+from lcdproc.server import Server
 
 # Set up the logging, based on the command line arguments
 
@@ -48,55 +47,35 @@ if args.file:
         logger.addHandler(fh)
 
 
-# declare global variables
-titleflag = False
-device = RPi_I2C_driver.lcd()
 
 def ascii_integers_to_string(string, base=16, digits_per_char=2):
 	return "".join([chr(int(string[i:i+digits_per_char], base=base)) for i in range(0, len(string), digits_per_char)])
 
-# function to scroll text
-
-def scroll_ltr_infinite(string, line):
-	logger.debug("new thread started...")
-	logger.debug(string)
-	global titleflag
-	global device
-	titleflag = False
-	i = 0
-	logger.debug(titleflag)
-	str_pad = " " * 20
-	string = str_pad + string
-	while ((not titleflag) and i in range (0, len(string))):
-		logger.debug("in the for loop...")
-		logger.debug(i)
-		lcd_text = string[i:(i+20)]
-		device.lcd_display_string(lcd_text, line)
-		sleep(0.25)
-		device.lcd_display_string(str_pad, line)
-		i += 1
-	logger.debug("Thread exiting...")
-
-
 
 def main():
+	# initialize the connection
+	lcd = Server(debug=False)
+    	lcd.start_session()
+	
+	# setup a screen
+	screen1 = lcd.add_screen("Screen1")
+	screen1.set_heartbeat("off")
+	screen1.set_duration(10)
+
+	# add fields to the screen - in this case we're just going to use scrolling text fields
+	line1 = screen1.add_scroller_widget("Line1", top = 1, direction = "h",  speed=2)
+	line2 = screen1.add_scroller_widget("Line2", top = 2, direction = "h",  speed=2)
+	line3 = screen1.add_scroller_widget("Line3", top = 3, direction = "h",  speed=2)
+	line4 = screen1.add_scroller_widget("Line4", top = 4, direction = "h",  speed=2)
+
 	path = "/tmp/shairport-sync-metadata"
 	fifo = open(path, "r")
 	wholeelement = ""
 	title = ""
 	album = ""
 	artist = ""
-	line4 = ""
+	info = ""
 	updateflag = False
-	global titleflag
-	global device
-	# initialize the screen
-
-	device.lcd_clear()
-	device.lcd_display_string("     Music Box      ",2)
-	sleep(3)
-	device.lcd_clear()
-	device.backlight(0)
 
 	with fifo as f:
 		while True:
@@ -134,16 +113,16 @@ def main():
 					if code == "pend":
 						logger.info("Playback finished...")
 						titleflag = True # stop running title thread if there is one
-						device.lcd_clear()
-						device.backlight(0)
+						# device.lcd_clear()
+						# device.backlight(0)
 
 					if code == "pbeg":
-						device.backlight(1)
+						# device.backlight(1)
 						logger.info("Playback started...")
-						device.lcd_clear()
+						# device.lcd_clear()
 					if code == "snua":
 						logger.info("User agent received")
-						line4 = data
+						info = data
 						updateflag = True				
 				if type == "core":
 					#process the codes that we're interested in
@@ -172,18 +151,11 @@ def main():
 				wholeelement = ""
 			if updateflag:
 				logger.info("\nTitle: " + title + "\nArtist: " + artist + "\nAlbum: " + album)
-
-				device.lcd_clear()
-				# for now, truncate to 20 chars to prevent wrapping onto other lines
-				# Check to see if title is > 20 chars. If yes start a thread to scroll text. If no, just display as is
-				#if (len(title) > 20):
-				#	titleflag = True # stop running title thread if there is one
-				#	thread.start_new_thread(scroll_ltr_infinite, (title,))
-				#else:
-				device.lcd_display_string(title[:20],1)
-				device.lcd_display_string(artist[:20],2)
-				device.lcd_display_string(album[:20],3)
-				device.lcd_display_string(line4[:20],4)
+				# update the lines with the new contents of the variables
+				line1.set_text(title)
+				line2.set_text(artist)
+				line3.set_text(album)
+				line4.set_text(info)
 				updateflag = False
 	fifo.close()
 
