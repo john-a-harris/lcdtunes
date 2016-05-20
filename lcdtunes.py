@@ -166,29 +166,12 @@ def main():
 				logger.info("\nTitle: " + title + "\nArtist: " + artist + "\nAlbum: " + album)
 				# update the lines with the new contents of the variables
 				line1.set_text(pad_string(title))
-				line2.set_text(artist)
-				line3.set_text(album)
-				line4.set_text(info)
+				line2.set_text(pad_string(artist))
+				line3.set_text(pad_string(album))
+				line4.set_text(pad_string(info))
 				updateflag = False
 	fifo.close()
 
-def test():
-	global titleflag
-	device.lcd_display_string("This is line 2",2)
-	sleep(1)
-	logger.debug("test function")
-	thread.start_new_thread(scroll_ltr_infinite, ("This is a long string that should scroll in a new thread", 1))
-	sleep(1)
-	device.lcd_display_string("This is line 3",3)
-	thread.start_new_thread(scroll_ltr_infinite, ("This is a different string that should scroll in a new thread", 2))
-	# thread.start_new_thread(scroll_ltr_infinite, ())
-	#scroll_ltr_infinite("This is a long string that should scroll")
-	sleep(60)
-	titleflag = True
-	logger.debug("titleflag set to true")
-	sleep(60)
-	logger.debug("exiting...")
 
 if __name__ == "__main__":
 	main()
-	# test()
