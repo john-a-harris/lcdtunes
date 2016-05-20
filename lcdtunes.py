@@ -47,10 +47,18 @@ if args.file:
         logger.addHandler(fh)
 
 
-
+# Some magic to decode ascii digits to string
 def ascii_integers_to_string(string, base=16, digits_per_char=2):
 	return "".join([chr(int(string[i:i+digits_per_char], base=base)) for i in range(0, len(string), digits_per_char)])
 
+# helper function to add a single space pad to a string if it is over 20 chars long
+# so that it looks better when marquee scrolling
+def pad_string(string_to_pad):
+	if len(string_to_pad) > 20:
+		string_to_pad = string_to_pad + " "
+		return string_to_pad
+	else:
+		return string_to_pad
 
 def main():
 	# initialize the connection
@@ -63,10 +71,10 @@ def main():
 	screen1.set_duration(10)
 
 	# add fields to the screen - in this case we're just going to use scrolling text fields
-	line1 = screen1.add_scroller_widget("Line1", top = 1, direction = "h",  speed=2)
-	line2 = screen1.add_scroller_widget("Line2", top = 2, direction = "h",  speed=2)
-	line3 = screen1.add_scroller_widget("Line3", top = 3, direction = "h",  speed=2)
-	line4 = screen1.add_scroller_widget("Line4", top = 4, direction = "h",  speed=2)
+	line1 = screen1.add_scroller_widget("Line1", top = 1, direction = "m",  speed=3, text = "")
+	line2 = screen1.add_scroller_widget("Line2", top = 2, direction = "m",  speed=3, text = "")
+	line3 = screen1.add_scroller_widget("Line3", top = 3, direction = "m",  speed=3, text = "")
+	line4 = screen1.add_scroller_widget("Line4", top = 4, direction = "m",  speed=3, text = "")
 
 	path = "/tmp/shairport-sync-metadata"
 	fifo = open(path, "r")
@@ -113,11 +121,16 @@ def main():
 					if code == "pend":
 						logger.info("Playback finished...")
 						titleflag = True # stop running title thread if there is one
-						# device.lcd_clear()
-						# device.backlight(0)
+						screen1.clear()
+						title = ""
+						album = ""
+						artist = ""
+						info = ""
+						updateflag = True
+						screen1.set_backlight("off")
 
 					if code == "pbeg":
-						# device.backlight(1)
+						screen1.set_backlight("on")
 						logger.info("Playback started...")
 						# device.lcd_clear()
 					if code == "snua":
@@ -152,7 +165,7 @@ def main():
 			if updateflag:
 				logger.info("\nTitle: " + title + "\nArtist: " + artist + "\nAlbum: " + album)
 				# update the lines with the new contents of the variables
-				line1.set_text(title)
+				line1.set_text(pad_string(title))
 				line2.set_text(artist)
 				line3.set_text(album)
 				line4.set_text(info)
