@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import os
 import sys
 import base64
@@ -69,6 +71,7 @@ def main():
 	screen1 = lcd.add_screen("Screen1")
 	screen1.set_heartbeat("off")
 	screen1.set_duration(10)
+	screen1.set_priority("info")
 
 	# add fields to the screen - in this case we're just going to use scrolling text fields
 	line1 = screen1.add_scroller_widget("Line1", top = 1, direction = "m",  speed=3, text = "")
@@ -137,6 +140,13 @@ def main():
 						logger.info("User agent received")
 						info = data
 						updateflag = True				
+					if code == "test":
+						vol_screen = lcd.add_screen("Volume")
+						vol_screen.set_heartbeat("off")
+						vol_screen.set_priority("foreground")
+						vol_screen.set_timeout(2)
+						vol_title = vol_screen.add_title_widget("vol_title", text = "Volume")
+						logger.info("volume information received")
 				if type == "core":
 					#process the codes that we're interested in
 					if code == "assn":
