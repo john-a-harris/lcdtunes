@@ -66,7 +66,7 @@ def main():
 	# initialize the connection
 	lcd = Server(debug=False)
     	lcd.start_session()
-	
+
 	# setup a screen
 	screen1 = lcd.add_screen("Screen1")
 	screen1.set_heartbeat("off")
@@ -74,10 +74,12 @@ def main():
 	screen1.set_priority("info")
 
 	# add fields to the screen - in this case we're just going to use scrolling text fields
-	line1 = screen1.add_scroller_widget("Line1", top = 1, direction = "m",  speed=3, text = "")
-	line2 = screen1.add_scroller_widget("Line2", top = 2, direction = "m",  speed=3, text = "")
-	line3 = screen1.add_scroller_widget("Line3", top = 3, direction = "m",  speed=3, text = "")
-	line4 = screen1.add_scroller_widget("Line4", top = 4, direction = "m",  speed=3, text = "")
+	title = screen1.add_title_widget("Title", text = "Airplay")
+	line1 = screen1.add_scroller_widget("Line1", top = 2, direction = "m",  speed=3, text = "")
+	line2 = screen1.add_scroller_widget("Line2", top = 3, direction = "m",  speed=3, text = "")
+	line3 = screen1.add_scroller_widget("Line3", top = 4, direction = "m",  speed=3, text = "")
+
+
 
 	path = "/tmp/shairport-sync-metadata"
 	fifo = open(path, "r")
@@ -97,10 +99,10 @@ def main():
 			if line.endswith("</item>"):
 				logger.debug("end of item")
 				logger.debug("element = " + wholeelement)
-				
+
 				# Now that we've got a whole xml element, we can process it
 				doc = xml.etree.ElementTree.fromstring(wholeelement)
-				
+
 				# get the type and convert to ascii
 				type = doc.findtext('type')
 				type = ascii_integers_to_string(type)
@@ -120,10 +122,9 @@ def main():
 						#album = ""
 						#artist = ""
 						#updateflag = True
-						
+
 					if code == "pend":
 						logger.info("Playback finished...")
-						titleflag = True # stop running title thread if there is one
 						screen1.clear()
 						title = ""
 						album = ""
@@ -139,18 +140,25 @@ def main():
 					if code == "snua":
 						logger.info("User agent received")
 						info = data
-						updateflag = True				
-					if code == "test":
+						updateflag = True
+					if code == "pvol":
+						# set up the volume screen
 						vol_screen = lcd.add_screen("Volume")
 						vol_screen.set_heartbeat("off")
+						vol_title = vol_screen.add_title_widget("vol_title", text = "Volume")
 						vol_screen.set_priority("foreground")
 						vol_screen.set_timeout(2)
-						vol_title = vol_screen.add_title_widget("vol_title", text = "Volume")
+
+
 						logger.info("volume information received")
 				if type == "core":
 					#process the codes that we're interested in
 					if code == "assn":
-						if title != data:
+						if ((title != data) and (data !="")):
+							title = data
+							updateflag = True
+					if code == "minm":
+						if ((title != data) and (data !="")):
 							title = data
 							updateflag = True
 					if code == "asar":
@@ -170,7 +178,7 @@ def main():
 					logger.info("Type: " + type + ", Code: " + code + ", Data: " + data)
 				else:
 					logger.info("Type: " + type + ", Code: " + code)
-					
+
 				wholeelement = ""
 			if updateflag:
 				logger.info("\nTitle: " + title + "\nArtist: " + artist + "\nAlbum: " + album)
@@ -178,7 +186,6 @@ def main():
 				line1.set_text(pad_string(title))
 				line2.set_text(pad_string(artist))
 				line3.set_text(pad_string(album))
-				line4.set_text(pad_string(info))
 				updateflag = False
 	fifo.close()
 

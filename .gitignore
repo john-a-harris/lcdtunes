@@ -1,3 +1,4 @@
 test_scripts/**
 *.pyc
 *.swp
+*.log
