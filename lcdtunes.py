@@ -4,7 +4,9 @@ import os
 import sys
 import base64
 import xml.etree.ElementTree
-from time import *
+#from time import *
+import time
+import threading
 
 # Import Lcdproc server stuff
 from lcdproc.server import Server
@@ -44,7 +46,8 @@ logger.addHandler(ch)
 # create file handler which logs messages to file if user specifed it on the command line
 if args.file:
         fh = logging.FileHandler('logger.log', 'w')
-        fh.setLevel(loglevel)
+#        fh.setLevel(loglevel)
+        fh.setLevel(logging.DEBUG)
         fh.setFormatter(file_formatter)
         logger.addHandler(fh)
 
@@ -62,8 +65,9 @@ def pad_string(string_to_pad):
 	else:
 		return string_to_pad
 
+
 def main():
-	# initialize the connection
+	#n initialize the connection
 	lcd = Server(debug=False)
     	lcd.start_session()
 
@@ -79,7 +83,21 @@ def main():
 	line2 = screen1.add_scroller_widget("Line2", top = 3, direction = "m",  speed=3, text = "")
 	line3 = screen1.add_scroller_widget("Line3", top = 4, direction = "m",  speed=3, text = "")
 
+	# set up the volume screen
+	vol_screen = lcd.add_screen("Volume")
+	vol_screen.set_heartbeat("off")
+	vol_title = vol_screen.add_title_widget("vol_title", text = "Volume")
+	vol_screen.set_priority("hidden")
+	vol_screen.set_duration(2)
+	
+	# Add fields to the volume screen
+	volume2 = vol_screen.add_scroller_widget("Volume2", top = 3, direction = "m",  speed=3, text = "")
 
+
+	# function to reset the priority of the volume screen
+	def resetVolPriority():
+		time.sleep(2)
+		vol_screen.set_priority("hidden") 
 
 	path = "/tmp/shairport-sync-metadata"
 	fifo = open(path, "r")
@@ -142,15 +160,11 @@ def main():
 						info = data
 						updateflag = True
 					if code == "pvol":
-						# set up the volume screen
-						vol_screen = lcd.add_screen("Volume")
-						vol_screen.set_heartbeat("off")
-						vol_title = vol_screen.add_title_widget("vol_title", text = "Volume")
-						vol_screen.set_priority("foreground")
-						vol_screen.set_timeout(2)
-
-
+						# update the volume screen
 						logger.info("volume information received")
+						volume2.set_text(data)
+						vol_screen.set_priority("alert")
+						threading.Thread(target=resetVolPriority).start()
 				if type == "core":
 					#process the codes that we're interested in
 					if code == "assn":
