@@ -65,9 +65,12 @@ def pad_string(string_to_pad):
 	else:
 		return string_to_pad
 
+# helper function to calculate volume as a percentage
+def volumePercent(rawValue, minVolume, maxVolume):
+	return (((rawValue - minVolume) * 100) / (maxVolume - minVolume))
 
 def main():
-	#n initialize the connection
+	# initialize the connection
 	lcd = Server(debug=False)
     	lcd.start_session()
 
@@ -162,6 +165,9 @@ def main():
 					if code == "pvol":
 						# update the volume screen
 						logger.info("volume information received")
+						volVals = data.split(",")
+						logger.info(volVals)
+						logger.info(volumePercent(float(volVals[1]),float(volVals[2]),float(volVals[3])))
 						volume2.set_text(data)
 						vol_screen.set_priority("alert")
 						threading.Thread(target=resetVolPriority).start()
