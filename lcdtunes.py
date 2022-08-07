@@ -101,6 +101,18 @@ def main():
 	def resetVolPriority():
 		time.sleep(2)
 		vol_screen.set_priority("hidden") 
+	
+	# Set up a Spotify screen
+	spot_screen = lcd.add_screen("Spotify")
+        spot_screen.set_heartbeat("off")
+        spot_title = spot_screen.add_title_widget("spot_title", text = "Spotify")
+        spot_screen.set_priority("hidden")
+        spot_screen.set_duration(10)
+
+	# Add fields to the spotify screen
+        spot_line1 = spot_screen.add_scroller_widget("Spot_Line1", top = 2, direction = "m",  speed=3, text = "")
+        spot_line2 = spot_screen.add_scroller_widget("Spot_Line2", top = 3, direction = "m",  speed=3, text = "")
+        spot_line3 = spot_screen.add_scroller_widget("Spot_Line3", top = 4, direction = "m",  speed=3, text = "")
 
 	path = "/tmp/shairport-sync-metadata"
 	fifo = open(path, "r")
@@ -192,7 +204,29 @@ def main():
 					if code == "asbr":
 						logger.info("Bitrate:")
 						logger.info(int("0x" + ''.join([hex(ord(x))[2:] for x in data]), base=16))
-
+				if type == "spot":
+					# Check for spotify codes (note this is not part of the shairport metadata standard)
+					if code == "play":
+						logger.info("spotify playback started")
+						screen1.set_backlight("on")
+						spot_screen.set_priority("info")
+						screen1.set_priority("hidden")
+						spot_line2.set_text("Spotify is playing... ")
+					if code == "stop":
+						logger.info("spotify playback stopped")
+						spot_screen.clear()
+						spot_screen.set_priority("hidden")
+                                                screen1.set_priority("info")
+						screen1.set_backlight("off")
+					if code == "stit":
+						logger.info("Spotify track: " + data)
+						spot_line1.set_text(pad_string(data))
+					if code == "salb":
+						logger.info("Spotify album: " + data)
+						spot_line3.set_text(pad_string(data))
+					if code == "sart":
+						logger.info("Spotify artist: " + data)
+						spot_line2.set_text(pad_string(data))
 
 				if data != "":
 					logger.info("Type: " + type + ", Code: " + code + ", Data: " + data)
