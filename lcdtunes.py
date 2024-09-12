@@ -78,7 +78,7 @@ def main():
 	screen1 = lcd.add_screen("Screen1")
 	screen1.set_heartbeat("off")
 	screen1.set_duration(10)
-	screen1.set_priority("info")
+	screen1.set_priority("hidden")
 
 	# add fields to the screen - in this case we're just going to use scrolling text fields
 	title = screen1.add_title_widget("Title", text = "Airplay")
@@ -165,8 +165,10 @@ def main():
 						info = ""
 						updateflag = True
 						screen1.set_backlight("off")
+						#screen1.set_priority("hidden")
 
 					if code == "pbeg":
+						screen1.set_priority("foreground")
 						screen1.set_backlight("on")
 						logger.info("Playback started...")
 						# device.lcd_clear()
@@ -209,7 +211,7 @@ def main():
 					if code == "play":
 						logger.info("spotify playback started")
 						screen1.set_backlight("on")
-						spot_screen.set_priority("info")
+						spot_screen.set_priority("foreground")
 						screen1.set_priority("hidden")
 						spot_line2.set_text("Spotify is playing... ")
 					if code == "stop":
